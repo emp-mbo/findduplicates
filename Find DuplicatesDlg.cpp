@@ -106,9 +106,8 @@ BOOL CAboutDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	
 	// TODO: Add extra initialization here
-	m_edtInfo.SetWindowText("This comes alone, and as a part of 'My Uninstaller'. "
-			"Please check geocities.com/hirak_99 for more information."
-			"\r\n\r\nPS. My email addr is hirak99@gmail.com, I like nice emails. I don't dislike e-cheques or cash either ;o)");
+	m_edtInfo.SetWindowText("This program comes as stand-alone exe.\r\nThere is no installer.\r\n\r\n"
+			"P.S.: My email addr is hirak99@gmail.com, I like nice emails. I don't dislike e-cheques or cash either ;o)");
 	
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
@@ -190,8 +189,19 @@ BEGIN_MESSAGE_MAP(CFindDuplicatesDlg, CDialog)
 	ON_WM_MENUSELECT()
 	ON_BN_CLICKED(IDC_MOVE, OnMoveFile)
 	ON_WM_DROPFILES()
-	//}}AFX_MSG_MAP
 	ON_NOTIFY_EX(TTN_NEEDTEXT,0,OnToolTipText)	// from MSDN
+	ON_COMMAND(ID_OPTIONS_INCLUDESUBFOLDERS, &CFindDuplicatesDlg::OnOptionsIncludesubfolders)
+	ON_COMMAND(ID_OPTIONS_INCLUDEZEROLENGTHFILES, &CFindDuplicatesDlg::OnOptionsIncludezerolengthfiles)
+	ON_COMMAND(ID_OPTIONS_LOOKFORHIDDEN, &CFindDuplicatesDlg::OnOptionsLookforhidden)
+	ON_COMMAND(ID_OPTIONS_REMOVERESULTINGEMPTYFOLDERS, &CFindDuplicatesDlg::OnOptionsRemoveresultingemptyfolders)
+	ON_UPDATE_COMMAND_UI(ID_OPTIONS_INCLUDESUBFOLDERS, &CFindDuplicatesDlg::OnUpdateOptionsIncludesubfolders)
+	ON_UPDATE_COMMAND_UI(ID_OPTIONS_INCLUDEZEROLENGTHFILES, &CFindDuplicatesDlg::OnUpdateOptionsIncludezerolengthfiles)
+	ON_UPDATE_COMMAND_UI(ID_OPTIONS_LOOKFORHIDDEN, &CFindDuplicatesDlg::OnUpdateOptionsLookforhidden)
+	ON_UPDATE_COMMAND_UI(ID_OPTIONS_REMOVERESULTINGEMPTYFOLDERS, &CFindDuplicatesDlg::OnUpdateOptionsRemoveresultingemptyfolders)
+	ON_WM_INITMENUPOPUP()
+	ON_COMMAND(ID_FILE_EXIT, &CFindDuplicatesDlg::OnFileExit)
+	ON_WM_GETMINMAXINFO()
+	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -258,7 +268,7 @@ BOOL CFindDuplicatesDlg::OnInitDialog()
 	}
 	delete CmdLine;
 #ifdef _DEBUG
-	m_lstFolders.InsertItem(0,"C:\\Arnab\\New Folder\\");
+	m_lstFolders.InsertItem(0,"C:\\Users\\mbo\\");
 	nCmdFileCount++;
 #endif
 	if (nCmdFileCount>1)
@@ -706,6 +716,7 @@ void CFindDuplicatesDlg::ScanNCompare()
 	GetDlgItem(IDC_CHK_SUBDIRS)->EnableWindow(false);
 	GetDlgItem(IDC_CHK_ZEROFILES)->EnableWindow(false);
 	GetDlgItem(IDC_CHK_HIDDEN)->EnableWindow(false);
+	GetDlgItem(IDC_CHK_REMOVEFOLDERS)->EnableWindow(false);
 	GetDlgItem(IDCANCEL)->SetWindowText("&Stop Scan");
 	m_WhatIfList.RemoveAll();
 	GetDlgItem(IDC_WHAT_IF)->SetWindowText("&What If");
@@ -788,9 +799,13 @@ void CFindDuplicatesDlg::ScanNCompare()
 	GetDlgItem(IDC_WHAT_IF)->EnableWindow(true);
 	GetDlgItem(IDC_DELETE)->EnableWindow(true);
 	GetDlgItem(IDC_MOVE)->EnableWindow(true);
-	GetDlgItem(IDC_CHK_SUBDIRS)->EnableWindow(true);
-	GetDlgItem(IDC_CHK_ZEROFILES)->EnableWindow(true);
-	GetDlgItem(IDC_CHK_HIDDEN)->EnableWindow(true);
+	// 2026: Checkboxes permanently invisible because they are in Options menu now
+	//GetDlgItem(IDC_CHK_SUBDIRS)->EnableWindow(true);
+	//GetDlgItem(IDC_CHK_ZEROFILES)->EnableWindow(true);
+	//GetDlgItem(IDC_CHK_HIDDEN)->EnableWindow(true);
+	//GetDlgItem(IDC_CHK_REMOVEFOLDERS)->EnableWindow(true);
+	//GetDlgItem(IDC_GRP_OPTIONS)->EnableWindow(true);
+
 	GetDlgItem(IDCANCEL)->SetWindowText("&Close");
 	if (m_bSelectiveCompare)
 	{
@@ -915,6 +930,7 @@ void CFindDuplicatesDlg::OnDelete()
 	MoveOrDeleteTo(false);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
 void CFindDuplicatesDlg::OnSize(UINT nType, int cx, int cy) 
 {
 	if (cx==0 || cy==0)
@@ -924,29 +940,84 @@ void CFindDuplicatesDlg::OnSize(UINT nType, int cx, int cy)
 		cx=rc.right; cy=rc.bottom;
 	}
 	else CDialog::OnSize(nType, cx, cy);
-	
-	// TODO: Add your message handler code here
-	// Since UpdateData() does not work from another thread,,,
+
+	// Since UpdateData() does not work from another thread...
 	bool m_bFillScreen=(m_chkFillScreen.GetState() & 1);
 	int nTop=m_bFillScreen?11:135;
 	int nLeft=cx-63; if (nLeft<115) nLeft=115;
+
+	CRect rect;
+	m_lstFolders.GetWindowRect(&rect); // Get screen coords
+	ScreenToClient(&rect);             // convert them to dialog coords
+	// Now access to rect values is possible:
+	m_lstFolders.MoveWindow(rect.left, rect.top, nLeft + 42, rect.Height());
+	m_lstFolders.GetClientRect(&rect);
+	m_lstFolders.SetColumnWidth(0, rect.Width());
+
+
+	GetDlgItem(IDC_START_SCAN)->GetWindowRect(&rect);
+	ScreenToClient(&rect);             // convert them to dialog coords
+	// calc center:
+	GetDlgItem(IDC_START_SCAN)->MoveWindow(cx / 2 - rect.Width() / 2, rect.top, rect.Width(), rect.Height());
+
+
+	GetDlgItem(IDC_START_SELECTIVE)->GetWindowRect(&rect);
+	ScreenToClient(&rect);             // convert them to dialog coords
+	GetDlgItem(IDC_START_SELECTIVE)->MoveWindow(cx - rect.Width() - 10 , rect.top, rect.Width(), rect.Height());
+
+
 	GetDlgItem(IDC_FILL_SCREEN)->MoveWindow(nLeft,nTop,53,16);
+	// Result Window Headline:
 	GetDlgItem(IDC_LBL_RESULTS)->MoveWindow(11,nTop+3,nLeft-16,13);
+	// IDLST_RESULTS:
 	m_lstResults.MoveWindow(11,nTop+18,nLeft+42,cy-213+(m_bFillScreen?124:0));
+	m_lstResults.GetClientRect(&rect);
+	m_lstResults.SetColumnWidth(0, rect.Width() - 80);
+	m_lstResults.SetColumnWidth(1, 80);
+
 	if (cy-56<nTop+23) nTop=nTop+23; else nTop=cy-56;
 	if (m_bThreadIsRunning) m_Animate.MoveWindow(11,nTop,16,16);
 	m_stInfo.MoveWindow(m_bThreadIsRunning?27:11,nTop,cx-(m_bThreadIsRunning?36:20),13);
 	m_prgCompare.MoveWindow(28,nTop,cx-37,13);
+
+	// Buttons below Result Window:
 	GetDlgItem(IDC_DESELECT_ALL)->MoveWindow(11,nTop+22,65,23);
 	GetDlgItem(IDC_AUTO_SELECT)->MoveWindow(79,nTop+22,65,23);
 	GetDlgItem(IDC_SELECT_IN_FOLDER)->MoveWindow(147,nTop+22,75,23);
-	nLeft=cx-262; if (nLeft<235) nLeft=235;
-	GetDlgItem(IDC_WHAT_IF)->MoveWindow(nLeft,nTop+22,65,23);
-	GetDlgItem(IDC_DELETE)->MoveWindow(nLeft+68,nTop+22,65,23);
-	GetDlgItem(IDC_MOVE)->MoveWindow(nLeft+134,nTop+22,50,23);
-	GetDlgItem(IDCANCEL)->MoveWindow(nLeft+187,nTop+22,65,23);
+
+
+	//nLeft=cx-262; if (nLeft<235) nLeft=235;
+	// From right to left:
+	// Close-Button:
+	GetDlgItem(IDCANCEL)->GetWindowRect(&rect);
+	ScreenToClient(&rect);
+	// 5: Initial padding right, 5: padding btw. buttons
+	int padd = 5;
+	int xcoord = cx - 5 - padd - rect.Width();
+	GetDlgItem(IDCANCEL)->MoveWindow(xcoord, nTop + 22, rect.Width(), rect.Height());
+
+	GetDlgItem(IDC_MOVE)->GetWindowRect(&rect);
+	ScreenToClient(&rect);
+	xcoord = xcoord - padd - rect.Width();
+	GetDlgItem(IDC_MOVE)->MoveWindow(xcoord, nTop + 22, rect.Width(), rect.Height());
+
+	GetDlgItem(IDC_DELETE)->GetWindowRect(&rect);
+	ScreenToClient(&rect);
+	xcoord = xcoord - padd - rect.Width();
+	GetDlgItem(IDC_DELETE)->MoveWindow(xcoord,nTop+22, rect.Width(), rect.Height());
+
+	GetDlgItem(IDC_WHAT_IF)->GetWindowRect(&rect);
+	ScreenToClient(&rect);
+	xcoord = xcoord - padd - rect.Width();
+	GetDlgItem(IDC_WHAT_IF)->MoveWindow(xcoord, nTop + 22, rect.Width(), rect.Height());
+
+	// Redraw:
 	Invalidate(FALSE);
+
+
 }
+////////////////////////////////////////////////////////////////////////////////////////////
+
 
 void CFindDuplicatesDlg::OnFillScreen() 
 {
@@ -955,13 +1026,14 @@ void CFindDuplicatesDlg::OnFillScreen()
 	m_lstFolders.ShowWindow(CmdShow);
 	GetDlgItem(IDC_ADD_FOLDER)->ShowWindow(CmdShow);
 	GetDlgItem(IDC_REMOVE_FOLDER)->ShowWindow(CmdShow);
-	GetDlgItem(IDC_CHK_SUBDIRS)->ShowWindow(CmdShow);
-	GetDlgItem(IDC_CHK_ZEROFILES)->ShowWindow(CmdShow);
-	GetDlgItem(IDC_CHK_HIDDEN)->ShowWindow(CmdShow);
-	GetDlgItem(IDC_CHK_REMOVEFOLDERS)->ShowWindow(CmdShow);
+	// 2026: Checkboxes permanently invisible because they are in Options menu now
+	//GetDlgItem(IDC_CHK_SUBDIRS)->ShowWindow(CmdShow);
+	//GetDlgItem(IDC_CHK_ZEROFILES)->ShowWindow(CmdShow);
+	//GetDlgItem(IDC_CHK_HIDDEN)->ShowWindow(CmdShow);
+	//GetDlgItem(IDC_CHK_REMOVEFOLDERS)->ShowWindow(CmdShow);
+	//GetDlgItem(IDC_GRP_OPTIONS)->ShowWindow(CmdShow);
 	GetDlgItem(IDC_START_SCAN)->ShowWindow(CmdShow);
 	GetDlgItem(IDC_START_SELECTIVE)->ShowWindow(CmdShow);
-	GetDlgItem(IDC_GRP_OPTIONS)->ShowWindow(CmdShow);
 	OnSize(SIZE_RESTORED,0,0);
 }
 
@@ -1380,7 +1452,7 @@ void CFindDuplicatesDlg::OnExportHTML()
 			"<title>Find Duplicates Results</title>\n"
 			"</head>\n"
 			"<body>\n"
-			"<p>This comparison result was generated by <a href=\"http://www.geocities.com/hirak_99/goodies/finddups.html\">Find Duplicates</a>.";
+			"<p>This comparison result was generated by <a href=\"https://github.com/hirak99/findduplicates\">Find Duplicates</a>.";
 		CString TimeStr;
 		TimeStr.Format("<p>The following duplicate files were found on %02d-%s-%4d, at %02d:%02d.</p>\n",
 			m_TimeStarted.wDay,szMonths[m_TimeStarted.wMonth-1],m_TimeStarted.wYear,
@@ -1539,4 +1611,150 @@ void CFindDuplicatesDlg::OnDropFiles(HDROP hDropInfo)
 	}
 
 	//CDialog::OnDropFiles(hDropInfo);
+
+}
+
+void CFindDuplicatesDlg::OnOptionsIncludesubfolders()
+{
+	// 1. Variable einfach toggeln (kein GetDlgItem nötig!)
+	m_chkSubdirs = !m_chkSubdirs;
+
+	// 2. Falls die Checkbox noch existiert (auch unsichtbar), 
+	// synchronisieren wir sie sicherheitshalber:
+	if (GetSafeHwnd()) {
+		UpdateData(FALSE);
+	}
+	
+	// Holt den aktuellen Status der alten Checkbox
+	// CButton* pCheck = (CButton*)GetDlgItem(ID_OPTIONS_INCLUDESUBFOLDERS);
+	// int state = pCheck->GetCheck();
+
+	// Kehrt den Status um (Toggle)
+	// pCheck->SetCheck(!state);
+
+	// Optional: Rufe die Funktion auf, die das Programm normal 
+	// beim Klick auf die Checkbox ausführt (falls vorhanden).
+}
+
+void CFindDuplicatesDlg::OnOptionsIncludezerolengthfiles()
+{
+	m_chkZeroFiles = !m_chkZeroFiles;
+	// 2. Falls die Checkbox noch existiert (auch unsichtbar), 
+	// synchronisieren wir sie sicherheitshalber:
+	if (GetSafeHwnd()) {
+		UpdateData(FALSE);
+	}
+
+	// Holt den aktuellen Status der alten Checkbox
+	//CButton* pCheck = (CButton*)GetDlgItem(ID_OPTIONS_INCLUDEZEROLENGTHFILES);
+	//int state = pCheck->GetCheck();
+
+	// Kehrt den Status um (Toggle)
+	//pCheck->SetCheck(!state);
+
+	// Optional: Rufe die Funktion auf, die das Programm normal 
+	// beim Klick auf die Checkbox ausführt (falls vorhanden).
+}
+
+void CFindDuplicatesDlg::OnOptionsLookforhidden()
+{
+	m_chkHidden = !m_chkHidden;
+	// 2. Falls die Checkbox noch existiert (auch unsichtbar), 
+	// synchronisieren wir sie sicherheitshalber:
+	if (GetSafeHwnd()) {
+		UpdateData(FALSE);
+	}
+
+	//ID_OPTIONS_LOOKFORHIDDEN
+	// Holt den aktuellen Status der alten Checkbox
+	//CButton* pCheck = (CButton*)GetDlgItem(ID_OPTIONS_LOOKFORHIDDEN);
+	//int state = pCheck->GetCheck();
+
+	// Kehrt den Status um (Toggle)
+	//pCheck->SetCheck(!state);
+
+	// Optional: Rufe die Funktion auf, die das Programm normal 
+	// beim Klick auf die Checkbox ausführt (falls vorhanden).
+}
+
+
+void CFindDuplicatesDlg::OnOptionsRemoveresultingemptyfolders()
+{
+	m_chkRemoveFolders = !m_chkRemoveFolders;
+	// 2. Falls die Checkbox noch existiert (auch unsichtbar), 
+	// synchronisieren wir sie sicherheitshalber:
+	if (GetSafeHwnd()) {
+		UpdateData(FALSE);
+	}
+	// ID_OPTIONS_REMOVERESULTINGEMPTYFOLDERS
+	// Holt den aktuellen Status der alten Checkbox
+	//CButton* pCheck = (CButton*)GetDlgItem(ID_OPTIONS_REMOVERESULTINGEMPTYFOLDERS);
+	//int state = pCheck->GetCheck();
+
+	// Kehrt den Status um (Toggle)
+	//pCheck->SetCheck(!state);
+
+	// Optional: Rufe die Funktion auf, die das Programm normal 
+	// beim Klick auf die Checkbox ausführt (falls vorhanden).
+}
+
+void CFindDuplicatesDlg::OnUpdateOptionsIncludesubfolders(CCmdUI* pCmdUI)
+{
+	CButton* pCheck = (CButton*)GetDlgItem(IDC_CHK_SUBDIRS);
+	pCmdUI->SetCheck(pCheck->GetCheck());
+}
+
+void CFindDuplicatesDlg::OnUpdateOptionsIncludezerolengthfiles(CCmdUI* pCmdUI)
+{
+	CButton* pCheck = (CButton*)GetDlgItem(IDC_CHK_ZEROFILES);
+	pCmdUI->SetCheck(pCheck->GetCheck());
+}
+
+void CFindDuplicatesDlg::OnUpdateOptionsLookforhidden(CCmdUI* pCmdUI)
+{
+	CButton* pCheck = (CButton*)GetDlgItem(IDC_CHK_HIDDEN);
+	pCmdUI->SetCheck(pCheck->GetCheck());
+}
+
+void CFindDuplicatesDlg::OnUpdateOptionsRemoveresultingemptyfolders(CCmdUI* pCmdUI)
+{
+	CButton* pCheck = (CButton*)GetDlgItem(IDC_CHK_REMOVEFOLDERS);
+	pCmdUI->SetCheck(pCheck->GetCheck());
+}
+
+void CFindDuplicatesDlg::OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu)
+{
+	CDialog::OnInitMenuPopup(pPopupMenu, nIndex, bSysMenu);
+
+	if (!bSysMenu && pPopupMenu)
+	{
+		// Dieser Befehl erzwingt, dass die ON_UPDATE_COMMAND_UI Handler 
+		// für das Menü aufgerufen werden.
+		CCmdUI cmdUI;
+		cmdUI.m_pMenu = pPopupMenu;
+		cmdUI.m_nIndexMax = pPopupMenu->GetMenuItemCount();
+		for (cmdUI.m_nIndex = 0; cmdUI.m_nIndex < cmdUI.m_nIndexMax; cmdUI.m_nIndex++)
+		{
+			cmdUI.m_nID = pPopupMenu->GetMenuItemID(cmdUI.m_nIndex);
+			if (cmdUI.m_nID != (UINT)-1 && cmdUI.m_nID != 0)
+				cmdUI.DoUpdate(this, FALSE);
+		}
+	}
+}
+
+void CFindDuplicatesDlg::OnFileExit()
+{
+	// Dies simuliert den Klick auf "OK" oder das "X" oben rechts.
+	// Es sorgt dafür, dass alle MFC-Cleanup-Routinen sauber durchlaufen werden.
+	EndDialog(IDOK);
+}
+
+void CFindDuplicatesDlg::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
+{
+	// Die minimale Breite und Höhe in Pixeln
+	// Tipp: Schau im Designer, wie groß das Fenster aktuell ist (unten rechts in der Statusleiste)
+	lpMMI->ptMinTrackSize.x = 640; // Minimale Breite
+	lpMMI->ptMinTrackSize.y = 480; // Minimale Höhe
+
+	CDialog::OnGetMinMaxInfo(lpMMI);
 }

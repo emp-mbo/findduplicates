@@ -40,14 +40,19 @@
 #define ID_INTEGRATE                    32778
 #define ID_HELP_ABOUT                   32779
 #define ID_EXPORTHTML                   32782
+#define ID_FILE_EXIT                    32788
+#define ID_OPTIONS_INCLUDESUBFOLDERS    32789
+#define ID_OPTIONS_INCLUDEZEROLENGTHFILES 32790
+#define ID_OPTIONS_LOOKFORHIDDEN        32791
+#define ID_OPTIONS_REMOVERESULTINGEMPTYFOLDERS 32792
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        138
-#define _APS_NEXT_COMMAND_VALUE         32788
-#define _APS_NEXT_CONTROL_VALUE         1060
+#define _APS_NEXT_RESOURCE_VALUE        140
+#define _APS_NEXT_COMMAND_VALUE         32793
+#define _APS_NEXT_CONTROL_VALUE         1061
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

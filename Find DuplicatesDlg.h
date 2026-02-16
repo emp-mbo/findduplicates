@@ -94,6 +94,12 @@ protected:
 	afx_msg void OnMenuSelect(UINT nItemID, UINT nFlags, HMENU hSysMenu);
 	afx_msg void OnMoveFile();
 	afx_msg void OnDropFiles(HDROP hDropInfo);
+	afx_msg void OnUpdateOptionsIncludesubfolders(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOptionsIncludezerolengthfiles(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOptionsLookforhidden(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOptionsRemoveresultingemptyfolders(CCmdUI* pCmdUI);
+	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
+	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
@@ -121,6 +127,12 @@ private:
 	void GetFiles(CTypedPtrList<CPtrList,FileInfo*> &Files,
 		CString Folder,bool ZerosAlso,bool Recurse,bool Hidden);
 	SYSTEMTIME m_TimeStarted;
+public:
+	afx_msg void OnOptionsLookforhidden();
+	afx_msg void OnOptionsIncludesubfolders();
+	afx_msg void OnOptionsIncludezerolengthfiles();
+	afx_msg void OnOptionsRemoveresultingemptyfolders();
+	afx_msg void OnFileExit();
 };
 
 //{{AFX_INSERT_LOCATION}}
