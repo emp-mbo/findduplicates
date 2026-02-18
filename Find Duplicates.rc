@@ -226,7 +226,7 @@ BEGIN
     BEGIN
         MENUITEM "&Include subfolders",         ID_OPTIONS_INCLUDESUBFOLDERS
         MENUITEM "Include &zero length files",  ID_OPTIONS_INCLUDEZEROLENGTHFILES
-        MENUITEM "&Look for hidden/system files also", 0
+        MENUITEM "&Look for hidden/system files also", ID_OPTIONS_LOOKFORHIDDEN
         MENUITEM "Remove resulting empt&y folders", ID_OPTIONS_REMOVERESULTINGEMPTYFOLDERS
     END
 END
